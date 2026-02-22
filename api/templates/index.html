@@ -41,7 +41,7 @@
         </div>
         {% endif %}
         <span class="text-[32px] leading-tight opacity-90 mb-1">{{ label }}</span>
-        <span class="text-[75px] leading-none drop-shadow-lg">{{ value }}</span>
+        <span class="text-[75px] leading-none drop-shadow-xl">{{ value }}</span>
     </div>
     {% endmacro %}
 
@@ -62,11 +62,11 @@
 
         <div class="flex-1">
             <header class="mb-12">
-                <h1 class="text-[64px] drop-shadow-2xl mb-4">Pull-up Buddy</h1>
+                <h1 class="text-[64px] drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">Pull-up Buddy</h1>
             </header>
 
             <section class="mb-16">
-                <h2 class="text-[48px] mb-8 drop-shadow-lg">{{ current_month_name }}</h2>
+                <h2 class="text-[48px] mb-8 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">{{ current_month_name }}</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl">
                     {{ stat_card('Day', stats.today, goals_met.day) }}
                     {{ stat_card('Week', stats.this_week, goals_met.week) }}
@@ -75,7 +75,7 @@
             </section>
 
             <section>
-                <h2 class="text-[48px] mb-8 drop-shadow-lg">All time records</h2>
+                <h2 class="text-[48px] mb-8 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">All time records</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mb-6">
                     {{ stat_card('Day', stats.max_day) }}
                     {{ stat_card('Week', stats.max_week) }}
