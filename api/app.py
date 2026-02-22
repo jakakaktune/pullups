@@ -40,20 +40,36 @@ def add_entry():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-@app.route('/api/clean-db', methods=['GET'])
+@app.route('/api/clean-db', methods=['POST'])
 def clean_db():
     try:
-        conn = get_db()
-        cursor = conn.cursor()
-        
-        cursor.execute("DELETE FROM sets WHERE reps = 0")
-        # this is where real data starts from, so delete everything prior
-        # We have no cascades, therefore we just manually find all the sessions which satisfy the condition
-        cursor.execute("DELETE FROM sets WHERE session_id in (SELECT id FROM sessions WHERE log_time < 1771788600)")
-        cursor.execute("DELETE FROM sessions WHERE log_time < 1771788600")
+        # Using a context manager automatically helps manage connections
+        with get_db() as conn:
+            cursor = conn.cursor()
+            
+            # The exact cutoff date in standard SQLite format (YYYY-MM-DD HH:MM:SS)
+            # Since London is on GMT in February, UTC matches your local time exactly.
+            cutoff_date = '2026-02-22 19:30:00'
+            
+            # 1. Clean up any 0-rep sets
+            cursor.execute("DELETE FROM sets WHERE reps = 0")
+            
+            # 2. Delete the child records (sets) for old sessions
+            cursor.execute("""
+                DELETE FROM sets 
+                WHERE session_id IN (
+                    SELECT id FROM sessions WHERE log_time < ?
+                )
+            """, (cutoff_date,))
+            
+            # 3. Delete the parent records (sessions)
+            cursor.execute("DELETE FROM sessions WHERE log_time < ?", (cutoff_date,))
 
-        conn.commit()
-        return jsonify({"success": True}), 201
+            conn.commit()
+            
+            # 200 OK is the standard success code for a deletion/modification
+            return jsonify({"success": True, "message": "Database cleaned successfully"}), 200 
+            
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
