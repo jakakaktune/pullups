@@ -47,6 +47,10 @@ def clean_db():
         cursor = conn.cursor()
         
         cursor.execute("DELETE FROM sets WHERE reps = 0")
+        # this is where real data starts from, so delete everything prior
+        # We have no cascades, therefore we just manually find all the sessions which satisfy the condition
+        cursor.execute("DELETE FROM sets WHERE session_id in (SELECT id FROM sessions WHERE log_time < 1771788600)")
+        cursor.execute("DELETE FROM sessions WHERE log_time < 1771788600")
 
         conn.commit()
         return jsonify({"success": True}), 201
