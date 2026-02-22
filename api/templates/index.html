@@ -9,20 +9,18 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Lilita+One&display=swap');
 
-        @keyframes drift {
-            from {
-                transform: translateX(0);
-            }
-
-            to {
-                transform: translateX(100vw);
-            }
+        .cloud {
+            position: absolute;
+            /* Use your preferred movement method, e.g., translateX */
+            animation: drive linear infinite;
+            animation-duration: var(--duration);
+            animation-delay: var(--delay, 0s); 
+            height: 100%;
         }
 
-        .cloud-animate {
-            animation: drift linear infinite;
-            /* This ensures they start at different points in the animation */
-            animation-delay: calc(var(--delay) * -10s);
+        @keyframes drive {
+            from { transform: translateX(-150px); }
+            to { transform: translateX(120vw); }
         }
     </style>
 </head>
@@ -47,35 +45,16 @@
     </div>
     {% endmacro %}
 
-    <div class="absolute h-[100vh] w-[100vw] min-h-screen overflow-hidden z-[-1]">
-        {% for row in range(3) %}
-            {% for col in range(4) %}
-                
-                {% set base_top = row * 30 %}
-                {% set base_left = col * 25 %}
-
-                {% set top_pos = base_top + range(-5, 10)|random %}
-                {# Start them off-screen to the left so they drift in #}
-                {% set left_pos = base_left + range(-5, 15)|random - 20 %}
-                
-                {% set cloud_width = 22 - (top_pos / 4) %}
-                {% set cloud_opacity = 0.7 - (top_pos / 150) %}
-                
-                {# LOGIC: Big clouds (heavy) move faster, small move slower #}
-                {% set speed = 200 + (top_pos * 2) %} 
-                {% set delay = range(0, 100)|random %}
-
-                <img src="/public/cloud.svg" 
-                    class="absolute pointer-events-none cloud-animate" 
-                    style="top: {{ top_pos }}%; 
-                            left: {{ left_pos }}%; 
-                            width: {{ cloud_width }}rem; 
-                            opacity: {{ cloud_opacity }};
-                            z-index: {{ 100 - top_pos|int }};
-                            --delay: {{ delay }};
-                            animation-duration: {{ speed }}s;">
-            {% endfor %}
-        {% endfor %}
+    <div id="skybox" class="absolute h-[100vh] w-[100vw] min-h-screen overflow-hidden z-[-2]">
+        <div class="absolute w-[120vw] h-[4vh] -left-[10vw] top-[85%] skybox__row"></div>
+        <div class="absolute w-[120vw] h-[5vh] -left-[10vw] top-[70%] skybox__row"></div>
+        <div class="absolute w-[120vw] h-[7vh] -left-[10vw] top-[55%] skybox__row"></div>
+        <div class="absolute w-[120vw] h-[7vh] -left-[10vw] top-[45%] skybox__row"></div>
+        <div class="absolute w-[120vw] h-[10vh] -left-[10vw] top-[35%] skybox__row"></div>
+        <div class="absolute w-[120vw] h-[10vh] -left-[10vw] top-[25%] skybox__row"></div>
+        <div class="absolute w-[120vw] h-[10vh] -left-[10vw] top-[15%] skybox__row"></div>
+        <div class="absolute w-[120vw] h-[15vh] -left-[10vw] top-[10%] skybox__row"></div>
+        <div class="absolute w-[120vw] h-[20vh] -left-[10vw] top-[0%] skybox__row"></div>
     </div>
 
     <div
@@ -109,11 +88,11 @@
             </section>
         </div>
 
-        <div class="fixed right-0 bottom-0 h-[80vh] aspect-[1.5] flex items-end justify-end">
+        <div class="fixed right-0 bottom-0 h-[80vh] aspect-[1.5] flex items-end justify-end z-[-1]">
             <div class="relative h-full w-8 border border-4 border-b-0 border-black">
-                <div style="bottom: {{ progress_percent }}%; transform: translateY(64%);"
+                <div style="bottom: {{ progress_percent }}%; transform: translateY(77%);"
                     class="absolute transition-all duration-[2000ms] ease-out z-20">
-                    <img src="/public/pullup-dude.svg"
+                    <img src="/public/pullup-dude-up.svg" id="climber"
                         class="w-10 h-10 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.8)]" alt="Climber">
                 </div>
             </div>
@@ -134,6 +113,70 @@
 
         </div>
     </div>
+
+    <script>
+
+        // climber animation
+        let climberImage = document.getElementById('climber');
+        let srcs = ['/public/pullup-dude-up.svg', '/public/pullup-dude-down.svg'];
+        let index = 1;
+        setInterval(() => {
+            // change the attribute
+            climberImage.setAttribute('src', srcs[index]);
+            // flip the index
+            index = index == 1 ? 0 : 1;
+        }, 1000);
+
+        // clouds
+        // we divide the screen in 9 rows.
+        // each row can spontaniously spawn a cloud, and its size will depend on the row its in (the bigger the row, the lower it appears, the smaller it should be);
+
+        let rows = [...document.querySelectorAll('.skybox__row')];
+
+        function addCloud(y, isInitial = false) {
+            // 1. Fix the row index (nth-child is 1-based, so we ensure y is 1-9)
+            const rowIndex = Math.max(1, Math.min(y, 9));
+            const parent = document.querySelector(`.skybox__row:nth-child(${rowIndex})`);
+            if (!parent) return;
+
+            // 2. Sprite & Duration Logic (Your existing logic)
+            let spriteIndex = Math.ceil(Math.random() * 3);
+            let min, max;
+
+            if (rowIndex <= 3) { // Top rows: Small/Slow
+                min = 50; max = 80;
+            } else if (rowIndex <= 6) { // Mid rows: Medium
+                min = 35; max = 50;
+            } else { // Bottom rows: Large/Fast
+                min = 20; max = 30;
+            }
+
+            const duration = (Math.floor(Math.random() * (max - min + 1)) + min) * 2;
+
+            // 3. Create the element
+            let img = document.createElement('img');
+            img.src = `/public/cloud-${spriteIndex}.svg`;
+            img.className = 'cloud';
+
+            // 4. THE SEEDING TWEAK
+            // If it's an initial cloud, we give it a random negative delay
+            // This makes it appear halfway through its flight immediately.
+            let delay = isInitial ? -(Math.random() * duration) : 0;
+
+            img.style.setProperty('--duration', `${duration}s`);
+            img.style.setProperty('--delay', `${delay}s`);
+
+            parent.appendChild(img);
+        }
+
+        // Seed the initial clouds
+        for (let i = 0; i < 15; i++) {
+            // Math.random() * 9 + 1 gives us a range of 1 to 9.99
+            addCloud(Math.floor(Math.random() * 9) + 1, true);
+        }
+
+
+    </script>
 </body>
 
 </html>
