@@ -28,11 +28,11 @@
 <body
     class="bg-gradient-to-b from-[#24273a] to-[#636ca0] min-h-screen overflow-x-hidden text-white font-['Lilita_One',sans-serif]">
 
-    {% macro stat_card(label, value, show_star=False) %}
+    {% macro stat_card(label, value, show_star=False, goal=False) %}
     <div
         class="group relative bg-[rgba(0,0,0,0.4)] backdrop-blur-sm rounded-[29px] p-6 transition-all duration-300 hover:bg-[rgba(0,0,0,0.5)] hover:scale-105 hover:shadow-2xl flex flex-col items-center justify-center min-h-[160px]">
         {% if show_star %}
-        <div class="absolute -top-6 -left-6 flex items-center justify-center w-[66px] h-[66px] animate-pulse z-20">
+        <div class="absolute -top-6 -left-6 flex items-center justify-center w-[66px] h-[66px] z-20">
             <svg class="w-12 h-12 text-yellow-400 rotate-[-24deg] drop-shadow-md" fill="currentColor"
                 viewBox="0 0 24 24">
                 <path
@@ -41,7 +41,8 @@
         </div>
         {% endif %}
         <span class="text-[32px] leading-tight opacity-90 mb-1">{{ label }}</span>
-        <span class="text-[75px] leading-none drop-shadow-xl">{{ value }}</span>
+        <span class="text-[75px] leading-none drop-shadow-xl">{{ value }}{% if goal %}<span class="text-sm leading-none drop-shadow-xl">/ {{ goal }}</span>{% endif %}
+        </span>
     </div>
     {% endmacro %}
 
@@ -68,9 +69,9 @@
             <section class="mb-16">
                 <h2 class="text-[48px] mb-8 drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]">{{ current_month_name }}</h2>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl">
-                    {{ stat_card('Day', stats.today, goals_met.day) }}
-                    {{ stat_card('Week', stats.this_week, goals_met.week) }}
-                    {{ stat_card('Month', stats.this_month, goals_met.month) }}
+                    {{ stat_card('Day', stats.today, goals_met.day, 40) }}
+                    {{ stat_card('Week', stats.this_week, goals_met.week, 224) }}
+                    {{ stat_card('Month', stats.this_month, goals_met.month, 652) }}
                 </div>
             </section>
 
@@ -82,13 +83,13 @@
                     {{ stat_card('Month', stats.max_month) }}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl">
-                    {{ stat_card('Single rep', stats.max_set) }}
+                    {{ stat_card('Single set', stats.max_set) }}
                     {{ stat_card('Single session', stats.max_session) }}
                 </div>
             </section>
         </div>
 
-        <div class="fixed right-0 bottom-0 h-[80vh] aspect-[1.5] flex items-end justify-end z-[-1]">
+        <div class="fixed right-0 bottom-0 h-[80lvh] aspect-[1.5] flex items-end justify-end z-[-1]">
             <div class="relative h-full w-8 border border-4 border-b-0 border-black">
                 <div style="bottom: {{ progress_percent }}%; transform: translateY(77%);"
                     class="absolute transition-all duration-[2000ms] ease-out z-20">
@@ -97,12 +98,12 @@
                 </div>
             </div>
 
-            <div class="h-[10%]">
+            <div class="h-[6%]">
                 <img src="/public/gediminas.svg" class="h-[100%] object-contain drop-shadow-2xl" alt="Gediminas Tower">
                 <!-- <span class="text-xl opacity-80 mt-2 drop-shadow-md tracking-wider">Gediminas</span> -->
             </div>
 
-            <div class="h-[30%]">
+            <div class="h-[34%]">
                 <!-- <span class="text-xl opacity-80 mb-2 drop-shadow-md tracking-wider">Pilsotas</span> -->
                 <img src="/public/pilsotas.svg" class="h-[100%] object-contain drop-shadow-2xl" alt="Pilsotas">
             </div>
@@ -180,3 +181,14 @@
 </body>
 
 </html>
+
+
+<!-- 100 - 652
+    x - 224
+    
+    y - 40
+
+    x = 224*100 /652 = 34.4
+
+    y = 40*100 / 652 = 6.13
+-->

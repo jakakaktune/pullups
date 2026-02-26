@@ -7,9 +7,9 @@
 #include <ArduinoJson.h>
 
 // --- Config ---
-const char* ssid = "***";
-const char* password = "***";
-const char* serverUrl = "***"; // YOUR SERVER'S IP
+const char* ssid = "****";
+const char* password = "****";
+const char* serverUrl = "http://****:**/api/add-entry"; // YOUR SERVER'S IP
 
 #define BUTTON_PIN 5 // D1 is GPIO5
 #define THRESHOLD_MM 200 // Distance change to trigger a pullup (20cm)
@@ -26,8 +26,8 @@ VL53L0X sensor;
 OneButton button(BUTTON_PIN, true); // true = active LOW
 
 // --- State Machine ---
-enum State { SLEEP, PREP, WORKOUT, REST };
-State currentState = SLEEP;
+enum State { PREP, WORKOUT, REST, DONE };
+State currentState = PREP;
 
 // --- Session Data ---
 struct SetData {
@@ -47,7 +47,7 @@ bool isPullupUp = false;
 void setup() {
   Serial.begin(115200);
   
-  // --- HARWARE RESET THE SENSOR ---
+  // --- HARDWARE RESET THE SENSOR ---
   pinMode(XSHUT_PIN, OUTPUT);
   digitalWrite(XSHUT_PIN, LOW);  // Turn sensor off
   delay(20);
@@ -60,7 +60,11 @@ void setup() {
   // Init Screen (Uses SW I2C internally)
   u8g2.begin();
   u8g2.enableUTF8Print();
-  updateScreen("BOOTING...", "Init Sensor");
+  updateScreen("BOOTING...", "Init Hardware");
+  
+  // Connect to WiFi in the background while prepping/working out
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
   
   // Init Sensor
   sensor.setTimeout(500);
@@ -74,7 +78,11 @@ void setup() {
   button.attachClick(handleSingleClick);
   button.attachLongPressStart(handleLongPress);
 
-  enterSleepState();
+  // Jump straight into the first prep phase
+  currentSetIndex = 0;
+  totalSessionReps = 0;
+  stateStartTime = millis();
+  currentState = PREP;
 }
 
 void loop() {
@@ -84,7 +92,7 @@ void loop() {
     case PREP: handlePrepState(); break;
     case WORKOUT: handleWorkoutState(); break;
     case REST: handleRestState(); break;
-    case SLEEP: break;
+    case DONE: break; // Do nothing, wait for physical power off
   }
 }
 
@@ -150,13 +158,7 @@ void handleRestState() {
 // --- Button Logic ---
 
 void handleSingleClick() {
-  if (currentState == SLEEP) {
-    currentSetIndex = 0;
-    totalSessionReps = 0;
-    stateStartTime = millis();
-    currentState = PREP;
-  } 
-  else if (currentState == WORKOUT) {
+  if (currentState == WORKOUT) {
     workoutSets[currentSetIndex].reps = currentReps;
     workoutSets[currentSetIndex].duration_sec = (millis() - stateStartTime) / 1000;
     stateStartTime = millis();
@@ -180,19 +182,19 @@ void handleLongPress() {
       workoutSets[currentSetIndex].duration_sec = (millis() - stateStartTime) / 1000;
     }
     
-    // If we double-click during REST, the reps and duration were ALREADY saved 
-    // when we transitioned from WORKOUT to REST. 
-    
     // In either case, this is the final set, so rest time after it is 0.
     workoutSets[currentSetIndex].rest_after_sec = 0; 
     
     // Move the index forward to lock in this final set
     currentSetIndex++; 
     
-    // Stop everything and sync
+    // Stop everything, sync, and halt
     updateScreen("SYNCING...", "Connecting...");
     sendDataToPi();
-    enterSleepState();
+    
+    // Halt operations and prompt user to flip the physical switch
+    currentState = DONE;
+    updateScreen("ALL DONE", "Power Off Now");
   }
 }
 
@@ -216,16 +218,8 @@ void updateScreen(const char* line1, const char* line2) {
   u8g2.sendBuffer();
 }
 
-void enterSleepState() {
-  currentState = SLEEP;
-  u8g2.clear(); 
-  WiFi.mode(WIFI_OFF); 
-}
-
 void sendDataToPi() {
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  
+  // Since WiFi started connecting in setup(), it should be ready, but we will wait just in case
   int retries = 0;
   while (WiFi.status() != WL_CONNECTED && retries < 20) {
     delay(500);
@@ -256,12 +250,18 @@ void sendDataToPi() {
     
     if (httpResponseCode > 0) {
       updateScreen("SUCCESS!", "Data Sent");
+      delay(2000); // Give the user time to see the success message
     } else {
       updateScreen("API ERROR", "Send Failed");
+      delay(3000); 
     }
     http.end();
   } else {
     updateScreen("WIFI ERROR", "No Connection");
+    delay(3000); 
   }
-  delay(3000); 
+  
+  // Turn off WiFi radio completely
+  WiFi.disconnect(true);
+  WiFi.mode(WIFI_OFF);
 }
