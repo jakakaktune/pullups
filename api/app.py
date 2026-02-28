@@ -10,7 +10,6 @@ DB_PATH = "pullups.sqlite"
 goals = {"day": 40, "week": 224, "month": 652}
 
 
-# proxy change
 def get_db():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
