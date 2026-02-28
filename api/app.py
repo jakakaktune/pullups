@@ -1,7 +1,11 @@
+import os
 import sqlite3
 from datetime import datetime, timedelta
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
+
+load_dotenv()
 
 app = Flask(__name__, static_folder="public", static_url_path="/public")
 DB_PATH = "pullups.sqlite"
@@ -251,4 +255,5 @@ def dashboard():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3000, debug=True)
+    debug_var = (os.environ.get("DEBUG") or "").lower() in ("true", "1")
+    app.run(host="0.0.0.0", port=3000, debug=debug_var)
