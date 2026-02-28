@@ -191,10 +191,15 @@ def dashboard():
             "day_count": day_count,
             "week_count_so_far": week_count_so_far,
             "daily_achieved": day_count >= goals["day"],
-            "weekly_achieved": week_count_so_far >= goals["week"],
+            "weekly_achieved": (
+                week_count_so_far >= goals["week"]
+                and week_count_so_far - day_count < goals["week"]
+                # a little trick here to make sure we are only marking the day where goal was met
+            ),
             "monthly_achieved": (
                 month_count_so_far >= goals["month"]
                 and month_count_so_far - day_count < goals["month"]
+                # same thing as with week goal, we only want to mark THE day where we break the goal
             ),
             "is_current": current_time.strftime("%Y-%m-%d")
             == modified_time.strftime("%Y-%m-%d"),
